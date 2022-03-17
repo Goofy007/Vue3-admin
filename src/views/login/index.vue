@@ -1,42 +1,124 @@
 <template>
   <div class="login-container">
-    <el-form class="login-form">
+    <el-form
+      class="login-form"
+      ref="loginFromRef"
+      :model="loginForm"
+      :rules="loginRules"
+    >
       <div class="title-container">
-        <h3 class="title">用户登录</h3>
+        <h3 class="title">login title</h3>
+        <lang-select class="lang-select" effect="light"></lang-select>
       </div>
-      <!-- username -->
-      <el-form-item>
+
+      <el-form-item prop="username">
         <span class="svg-container">
-          <svg-icon icon="https://res.lgdsunday.club/user.svg"></svg-icon>
+          <svg-icon icon="user" />
         </span>
-        <el-input placeholder="username" name="username" type="text"></el-input>
+        <el-input
+          placeholder="username"
+          name="username"
+          type="text"
+          v-model="loginForm.username"
+        />
       </el-form-item>
-      <!--password-->
-      <el-form-item>
+
+      <el-form-item prop="password">
         <span class="svg-container">
-          <el-icon>
-            <lock />
-          </el-icon>
+          <svg-icon icon="password" />
         </span>
-        <el-input placeholder="password" name="password" type="text"></el-input>
+        <el-input
+          placeholder="password"
+          name="password"
+          :type="passwordType"
+          v-model="loginForm.password"
+        />
         <span class="show-pwd">
-          <el-icon>
-            <eye />
-          </el-icon>
+          <svg-icon
+            :icon="passwordType === 'password' ? 'eye' : 'eye-open'"
+            @click="onChangePwdType"
+          />
         </span>
       </el-form-item>
 
-      <el-button type="primary" style="width: 100%; margin-bottom: 30px"
+      <el-button
+        type="primary"
+        style="width: 100%; margin-bottom: 30px"
+        :loading="loading"
+        @click="handleLogin"
         >登录</el-button
       >
+
+      <!-- <div class="tips" v-html="$t('msg.login.desc')"></div> -->
     </el-form>
   </div>
 </template>
 
 <script setup>
-import { Avatar, Lock, View as eye } from '@element-plus/icons'
-import SvgIcon from '@/components/SvgIcon'
-import { defineProps, computed } from 'vue'
+// import LangSelect from '@/components/LangSelect/index.vue'
+import { ref } from 'vue'
+import { validatePassword } from './rules'
+import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
+// import { useI18n } from 'vue-i18n'
+
+// 数据源
+const loginForm = ref({
+  username: 'super-admin',
+  password: '123456'
+})
+// 验证规则
+// const i18n = useI18n()
+const loginRules = ref({
+  username: [
+    {
+      required: true,
+      trigger: 'blur',
+      message: '用户名错误'
+    }
+  ],
+  password: [
+    {
+      required: true,
+      trigger: 'blur',
+      validator: validatePassword()
+    }
+  ]
+})
+
+// 处理密码框文本显示状态
+const passwordType = ref('password')
+const onChangePwdType = () => {
+  if (passwordType.value === 'password') {
+    passwordType.value = 'text'
+  } else {
+    passwordType.value = 'password'
+  }
+}
+
+// 登录动作处理
+const loading = ref(false)
+const loginFromRef = ref(null)
+const store = useStore()
+const router = useRouter()
+const handleLogin = () => {
+  loginFromRef.value.validate(valid => {
+    if (!valid) return
+
+    loading.value = true
+    store
+      .dispatch('user/login', loginForm.value)
+      .then(() => {
+        loading.value = false
+        // 登录后操作
+        router.push('/')
+      })
+      .catch(err => {
+        console.log(err)
+        loading.value = false
+      })
+  })
+}
 </script>
 
 <style lang="scss" scoped>
